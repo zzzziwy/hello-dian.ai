@@ -51,7 +51,7 @@ class Module(object):
 
 class Linear(Module):
 
-    def __init__(self, in_length: int, out_length: int):
+    def __init__(self, in_length: int, out_length: int, x):
         """Module which applies linear transformation to input.
 
         Args:
@@ -62,7 +62,9 @@ class Linear(Module):
         # TODO Initialize the weight
         # of linear module.
 
-        ...
+        self.w = tensor.zeros((in_length, out_length))
+        self.x = x
+
 
         # End of todo
 
@@ -78,8 +80,9 @@ class Linear(Module):
         # TODO Implement forward propogation
         # of linear module.
 
-        ...
 
+        out = np.dot(x, self.w)
+        return out
         # End of todo
 
 
@@ -94,9 +97,9 @@ class Linear(Module):
 
         # TODO Implement backward propogation
         # of linear module.
-
-        ...
-
+        self.w.grad = np.dot(np.transpose(self.x), dy)
+        dx = np.dot(dy, np.transpose(self.w))
+        return dx
         # End of todo
 
 
@@ -114,7 +117,9 @@ class BatchNorm1d(Module):
         # TODO Initialize the attributes
         # of 1d batchnorm module.
 
-        ...
+        self.length = length
+        self.momentum = self.momentum
+
 
         # End of todo
 
@@ -130,8 +135,19 @@ class BatchNorm1d(Module):
         # TODO Implement forward propogation
         # of 1d batchnorm module.
 
-        ...
-
+        out = None
+        N = x.shape[0]
+        # 求均值
+        ave_ope = 1/N * tensor.ones((1, N))
+        aves = np.dot(ave_ope, x)
+        self.aves = aves
+        # 求方差
+        x_squares = np.square(x)
+        vars = 1/N * np.dot(ave_ope, x_squares) - np.square(aves)
+        self.vars = vars
+        # nolmalization
+        out = (x - aves)/vars
+        return out
         # End of todo
 
     def backward(self, dy):
@@ -146,7 +162,8 @@ class BatchNorm1d(Module):
         # TODO Implement backward propogation
         # of 1d batchnorm module.
 
-        ...
+        dx = dy/self.vars
+        return dx
 
         # End of todo
 
@@ -155,6 +172,8 @@ class Conv2d(Module):
 
     def __init__(self, in_channels: int, channels: int, kernel_size: int=3,
                  stride: int=1, padding: int=0, bias: bool=False):
+        # 假定padding一直为0
+        # 假定只有一个卷积核
         """Module which applies 2D convolution to input.
 
         Args:
@@ -168,7 +187,13 @@ class Conv2d(Module):
         # TODO Initialize the attributes
         # of 2d convolution module.
 
-        ...
+        self.in_channels = in_channels
+        self.channels = channels
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
+        self.bias = bias
+        self.kernel = tensor.random((self.kernel_size, self.kernel_size, in_channels))
 
         # End of todo
 
@@ -184,7 +209,20 @@ class Conv2d(Module):
         # TODO Implement forward propogation
         # of 2d convolution module.
 
-        ...
+        B, C_in, H_in, W_in = x.shape
+        # compute output shape
+        W_out = int((W_in - self.kernel_size)/self.stride + 1)
+        H_out = int((H_in - self.kernel_size)/self.stride + 1)
+        # Img2Col and merge channels
+        img_col = Conv2d_im2col.forward(self, x)
+        W_img_col = img_col.shape[3]
+        img_col = img_col.reshape(B, -1, W_img_col)
+        # kelnel2Col and merge
+        kernel_col = self.kernel.reshape(1, self.kernel_size**2 * self.in_channels)
+
+        out_col = np.dot(self.kernel, img_col)
+        out = out_col.reshape(B, 1, H_out, W_out)
+
 
         # End of todo
 
@@ -211,8 +249,33 @@ class Conv2d_im2col(Conv2d):
 
         # TODO Implement forward propogation of
         # 2d convolution module using im2col method.
-
-        ...
+        """
+        Args:
+            x: images of shape(B, C_in, H_in, W_in)
+        Returns:
+            out: column of shape(B, C_in, Kernel_size**2, W_out)
+        """
+        B, C_in, H_in, W_in= x.shape
+        W_out = ((W_in - self.kernel_size)/self.stride + 1) * \
+                ((H_in - self.kernel_size)/self.stride + 1)
+        """W_out 的计算用到了除法，是float类型，需要转换成int"""
+        W_out = int(W_out)
+        out = tensor.zeros((B, C_in, self.kernel_size**2, W_out))
+        convhIdx = 0
+        convwIdx = 0
+        for i in range(B):
+            for j in range(C_in):
+        # scan from left_top
+                convhIdx = 0
+                convwIdx = 0
+                for k in range():
+                    if convwIdx + self.kernel_size > W_in:
+                        convwIdx = 0
+                        convhIdx += self.stride
+                    out[i, j, :, k] = x[i, j, convhIdx:convhIdx+self.kernel_size,
+                                      convwIdx:convwIdx+self.kernel_size].flatten().reshape((self.kernel_size**2, 1))
+                    convwIdx += 1
+        return out
 
         # End of todo
 
@@ -232,7 +295,9 @@ class AvgPool(Module):
         # TODO Initialize the attributes
         # of average pooling module.
 
-        ...
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
 
         # End of todo
 
@@ -248,7 +313,14 @@ class AvgPool(Module):
         # TODO Implement forward propogation
         # of average pooling module.
 
-        ...
+        B, C, H_in, W_in = x.shape
+        # compute output shape
+        H_out = int((H_in - self.kernel_size)/self.stride + 1)
+        W_out = int((W_in - self.kernel_size)/self.stride + 1)
+        # Img2col
+        img_col = Conv2d_im2col.forward(self, x)
+        out = np.average(img_col, axis=2).reshape(B, C, H_out, W_out)
+        return out
 
         # End of todo
 
@@ -284,7 +356,9 @@ class MaxPool(Module):
         # TODO Initialize the attributes
         # of maximum pooling module.
 
-        ...
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
 
         # End of todo
 
@@ -300,7 +374,14 @@ class MaxPool(Module):
         # TODO Implement forward propogation
         # of maximum pooling module.
 
-        ...
+        B, C, H_in, W_in = x.shape
+        # compute output shape
+        H_out = int((H_in - self.kernel_size) / self.stride + 1)
+        W_out = int((W_in - self.kernel_size) / self.stride + 1)
+        # Img2col
+        img_col = Conv2d_im2col.forward(self, x)
+        out = img_col.max(axis=2).reshape(B, C, H_out, W_out)
+        return out
 
         # End of todo
 
@@ -341,7 +422,7 @@ class Dropout(Module):
 
         # End of todo
 
-    def backard(self, dy):
+    def backward(self, dy):
 
         # TODO Implement backward propogation
         # of dropout module.
