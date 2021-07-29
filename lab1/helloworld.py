@@ -31,7 +31,7 @@ def main():
     X, y = gen_data(100)
     plot_data(X, y)
 
-    model = nn.Linear(2, 1)
+    model = nn.Linear(2, 1, X)
     for i in range(20):
         probs = model(X)
         preds = np.where(probs >= 0, 1, 0)

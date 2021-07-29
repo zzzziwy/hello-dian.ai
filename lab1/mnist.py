@@ -18,8 +18,14 @@ class Model(nn.Module):
 
     # TODO Design the classifier.
 
-    ...
-
+    def __init__(self, x, length):
+        self.x = x
+        self.length = length
+    def forward(self, x: np.ndarray) -> np.ndarray:
+        H1 = x.nn.BatchNorm1d(self.length)
+        H2 = nn.Conv2d.forward(H1, in_channels=3, channels=1)
+        H3 = nn.ReLu.forward(H2)
+        H4 = nn.Avgpool.forward(H3)
     # End of todo
 
 

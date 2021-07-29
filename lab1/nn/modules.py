@@ -409,7 +409,7 @@ class Dropout(Module):
         # TODO Initialize the attributes
         # of dropout module.
 
-        ...
+        self.p = 0.5
 
         # End of todo
 
@@ -418,7 +418,14 @@ class Dropout(Module):
         # TODO Implement forward propogation
         # of dropout module.
 
-        ...
+        H1 = forward(x)
+
+        U1 = np.random.rand(*H1.shape) < self.p  # first dropout mask
+        H1 *= U1  # drop!
+        H2 = forward(H1)
+        U2 = np.random.rand(*H2.shape) < self.p  # second dropout mask
+        H2 *= U2  # drop!
+        out = forward(H2)
 
         # End of todo
 
